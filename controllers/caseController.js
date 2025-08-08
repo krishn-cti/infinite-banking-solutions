@@ -294,7 +294,7 @@ export const getClientCaseDetail = async (req, res) => {
 //         } else {
 //             return res.status(500).json({
 //                 success: false,
-//                 message: MSG.PEOPLE_ADDED_FAILED,
+//                 message: MSG.PEOPLE_ADDITION_FAILED,
 //             });
 //         }
 
@@ -369,7 +369,7 @@ export const createClientPeople = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.PEOPLE_ADDED_FAILED,
+                message: MSG.PEOPLE_ADDITION_FAILED,
             });
         }
 
@@ -507,7 +507,7 @@ export const createClientProperty = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.PROPERTY_ADDED_FAILED,
+                message: MSG.PROPERTY_ADDITION_FAILED,
             });
         }
     } catch (error) {
@@ -576,7 +576,7 @@ export const createClientCredit = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.CREDIT_ADDED_FAILED,
+                message: MSG.CREDIT_ADDITION_FAILED,
             });
         }
     } catch (error) {
@@ -638,7 +638,7 @@ export const createClientLoan = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.LOAN_ADDED_FAILED,
+                message: MSG.LOAN_ADDITION_FAILED,
             });
         }
     } catch (error) {
@@ -708,7 +708,7 @@ export const createClientInvestment = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.INVESTMENT_ADDED_FAILED,
+                message: MSG.INVESTMENT_ADDITION_FAILED,
             });
         }
     } catch (error) {
@@ -770,7 +770,7 @@ export const createClientExpense = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.EXPENSE_ADDED_FAILED,
+                message: MSG.EXPENSE_ADDITION_FAILED,
             });
         }
     } catch (error) {
@@ -989,7 +989,7 @@ export const getClientTotals = async (req, res) => {
 //         if (!insertResult || insertResult.affectedRows === 0) {
 //             return res.status(500).json({
 //                 success: false,
-//                 message: MSG.REDUCTION_ADDED_FAILED,
+//                 message: MSG.REDUCTION_ADDITION_FAILED,
 //             });
 //         }
 
@@ -1011,7 +1011,7 @@ export const getClientTotals = async (req, res) => {
 //         } else {
 //             return res.status(500).json({
 //                 success: false,
-//                 message: MSG.REDUCTION_ADDED_FAILED,
+//                 message: MSG.REDUCTION_ADDITION_FAILED,
 //             });
 //         }
 
@@ -1053,7 +1053,7 @@ export const createClientReduction = async (req, res) => {
         if (!insertResult || insertResult.affectedRows === 0) {
             return res.status(500).json({
                 success: false,
-                message: MSG.REDUCTION_ADDED_FAILED,
+                message: MSG.REDUCTION_ADDITION_FAILED,
             });
         }
 
@@ -1082,7 +1082,7 @@ export const createClientReduction = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.REDUCTION_ADDED_FAILED,
+                message: MSG.REDUCTION_ADDITION_FAILED,
             });
         }
 
@@ -1139,7 +1139,7 @@ export const createClientFinalTotal = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.FINAL_TOTAL_ADDED_FAILED,
+                message: MSG.FINAL_TOTAL_ADDITION_FAILED,
             });
         }
     } catch (error) {
@@ -1253,7 +1253,7 @@ export const createClientPeoplePolicy = async (req, res) => {
         } else {
             return res.status(500).json({
                 success: false,
-                message: MSG.POLICY_ADDED_FAILED,
+                message: MSG.POLICY_ADDITION_FAILED,
             });
         }
     } catch (error) {
@@ -1616,10 +1616,10 @@ export const uploadPolicyExcel = async (req, res) => {
         await updateClientPeoplePolicies(policy_id, uploaded_file_name);
         fs.unlinkSync(file.path);
 
-        return res.status(200).json({ success: true, message: MSG.COMBINED_POILCY_DATA_INSERTED });
+        return res.status(200).json({ success: true, message: MSG.COMBINED_POLICY_DATA_INSERTED });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ success: false, message: MSG.COMBINED_POILCY_DATA_INSERTED_FAILED, error: err.message });
+        return res.status(500).json({ success: false, message: MSG.COMBINED_POLICY_DATA_INSERTION_FAILED, error: err.message });
     }
 };
 
@@ -1631,7 +1631,7 @@ export const getCombinedPolicyData = async (req, res) => {
         if (!combinedData || combinedData.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: MSG.COMBINED_POILCY_DATA_NOT_FOUND
+                message: MSG.COMBINED_POLICY_DATA_NOT_FOUND
             });
         }
 
@@ -1657,7 +1657,7 @@ export const getPolicyDetails = async (req, res) => {
         if (!poilicyDetails || poilicyDetails.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: MSG.POILCY_DATA_NOT_FOUND
+                message: MSG.POLICY_DATA_NOT_FOUND
             });
         }
 

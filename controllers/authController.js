@@ -60,7 +60,7 @@ export const login = async (req, res) => {
 
         res.json({
             success: true,
-            message: MSG.LOGIN_SUCCESSFULL,
+            message: MSG.LOGIN_SUCCESSFUL,
             token,
             user: {
                 ...user,
@@ -390,7 +390,7 @@ export const setSubadminPermissions = async (req, res) => {
 // Get All Permissions assigned to sub admin
 export const getSubadminPermissions = async (req, res) => {
     const { subadmin_id } = req.body;
-    
+
     if (!subadmin_id) {
         return res.status(400).json({
             success: false,
