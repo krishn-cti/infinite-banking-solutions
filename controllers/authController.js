@@ -14,9 +14,6 @@ import {
     updateUserProfile,
     fetchUserPassword,
     updatePassword,
-    createUser,
-    findUserByActToken,
-    verifyUserEmail,
     getUserCountByRole,
     updateClientAssignment,
     removeUserPermissions,
@@ -241,7 +238,7 @@ export const resetPassword = async (req, res) => {
         const hashedNewPassword = await argon2.hash(password);
 
         await updatePassword(hashedNewPassword, password, decoded.id);
-        return res.json({ success: true, message: MSG.PROFILE_UPDATED, redirect: "http://89.116.21.92/ibs/" });
+        return res.json({ success: true, message: MSG.PROFILE_UPDATED, redirect: process.env.APP_PATH });
     } catch (error) {
         res.status(500).json({ success: false, message: MSG.INTERNAL_SERVER_ERROR + error.message });
     }

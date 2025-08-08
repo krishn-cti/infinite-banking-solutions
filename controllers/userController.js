@@ -112,9 +112,16 @@ export const verifyEmail = async (req, res) => {
 
     try {
         const user = await findUserByActToken(token);
+        const verificationLink = `${process.env.BASE_PATH}://${process.env.PORT}/api/verify/${token}`;
 
         if (user?.act_token != token) {
-            return res.sendFile(path.join(__dirname, "views", "notverify.html"));
+
+            // return res.sendFile(path.join(__dirname, "views", "notverify.html"));
+            return res.render('notverify', {
+                appPath: process.env.BASE_PATH,
+                invitationLink: verificationLink,
+                helpLink: process.env.APP_PATH
+            });
         }
 
         const data = {
@@ -130,10 +137,13 @@ export const verifyEmail = async (req, res) => {
         );
 
         if (result.affectedRows > 0) {
-            return res.render("success");
-            // return res.redirect("http://89.116.21.92/ibs/");
+            return res.render("success", { appPath: process.env.APP_PATH });
         } else {
-            return res.sendFile(path.join(__dirname, "views", "notverify.html"));
+            return res.render('notverify', {
+                appPath: process.env.BASE_PATH,
+                invitationLink: verificationLink,
+                helpLink: process.env.APP_PATH
+            });
         }
     } catch (error) {
         res.status(500).json({ success: false, message: MSG.INTERNAL_SERVER_ERROR, error: error.message });

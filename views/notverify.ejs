@@ -19,7 +19,6 @@
         a:hover,
         a:link,
         a:visited {
-            /* This is the link colour */
             text-decoration: none !important;
             color: #0000EE;
         }
@@ -30,7 +29,6 @@
 
         p,
         p:visited {
-            /* Fallback paragraph style */
             font-size: 15px;
             line-height: 24px;
             font-family: 'Nunito Sans', sans-serif;
@@ -40,7 +38,6 @@
         }
 
         h1 {
-            /* Fallback heading style */
             font-size: 22px;
             line-height: 24px;
             font-family: 'Nunito Sans', sans-serif;
@@ -72,45 +69,46 @@
             width="600">
             <tbody>
                 <tr>
-                    <td style="width: 596px; vertical-align: top; padding-left: 0; padding-right: 0; padding-top: 15px; padding-bottom: 15px;"
+                    <td style="width: 596px; vertical-align: top; padding: 15px 0;"
                         width="596">
 
                         <!-- Your logo is here -->
-                        <img style="width: 180px; max-width: 180px; height: 85px; max-height: 85px; text-align: center; color: #ffffff; object-fit: contain;"
-                            alt="Logo" src="<%= BASE_URL %>/images/logo.png" align="center" width="180" height="85">
+                        <img style="width: 180px; max-width: 180px; height: 85px; max-height: 85px; object-fit: contain;"
+                            alt="Logo" src="<%= BASE_URL %>/images/logo.png" width="180" height="85">
 
                     </td>
                 </tr>
             </tbody>
         </table>
         <!-- End container for logo -->
+
         <!-- Start single column section -->
         <table align="center"
             style="text-align: center; vertical-align: top; width: 100%; max-width: 600px; background-color: #fff;"
             width="600">
             <tbody>
                 <tr>
-                    <td style="width: 596px; vertical-align: top; padding-left: 30px; padding-right: 30px; padding-top: 30px; padding-bottom: 40px;"
+                    <td style="width: 596px; vertical-align: top; padding: 30px 30px 40px 30px;"
                         width="596">
                         <img src="<%= BASE_URL %>/images/not-verify_img.jpg"
                             style="width:120px; margin-inline:auto; display: block; margin-bottom:15px">
                         <h1
-                            style="font-size: 20px; line-height: 24px;  font-weight: 700;   font-family: 'Nunito Sans', sans-serif;  text-decoration: none; color: #000000;">
+                            style="font-size: 20px; line-height: 24px; font-weight: 700; font-family: 'Nunito Sans', sans-serif; color: #000000;">
                             Not Verify!</h1>
 
                         <p
-                            style="font-size: 15px; line-height: 24px; margin-bottom: 30px;    font-family: 'Nunito Sans', sans-serif; font-weight: 400; text-decoration: none; color: #919293;">
-                            We noticed that you haven't accepted invitation yet. To ensure you can access all the
+                            style="font-size: 15px; line-height: 24px; margin-bottom: 30px; font-family: 'Nunito Sans', sans-serif; font-weight: 400; color: #919293;">
+                            We noticed that you haven't accepted the invitation yet. To ensure you can access all the
                             features and benefits of our service, please complete the invitation process by following
                             the link below:
                         </p>
-                        <a href="#" target="_blank"
-                            style="background-color: #4a81ff; font-size: 15px; line-height: 22px;    font-family: 'Nunito Sans', sans-serif; font-weight: normal; text-decoration: none; padding: 12px 15px; color: #ffffff; border-radius: 5px; display: inline-block;">
+                        <a href="<%= invitationLink %>" target="_blank"
+                            style="background-color: #4a81ff; font-size: 15px; line-height: 22px; font-family: 'Nunito Sans', sans-serif; padding: 12px 15px; color: #ffffff; border-radius: 5px; display: inline-block;">
                             <span style="color: #ffffff;">Accept Invitation</span>
                         </a>
 
                         <div style="padding-top: 40px; text-align: left;">
-                            <h4 style="margin-bottom: 10px; margin-top: 0px;  font-family: 'Nunito Sans', sans-serif;">
+                            <h4 style="margin-bottom: 10px; font-family: 'Nunito Sans', sans-serif;">
                                 Cheers
                             </h4>
                             <p style="margin-top: 0px; font-weight: 500; font-family: 'Nunito Sans', sans-serif;">
@@ -122,26 +120,22 @@
             </tbody>
         </table>
 
-
         <!-- End single column section -->
+
         <!-- Start footer -->
         <table align="center"
             style="text-align: center; vertical-align: top; width: 600px; max-width: 600px; background-color: #202224;"
             width="600">
             <tbody>
                 <tr>
-                    <td style="width: 596px; vertical-align: top; padding-left: 30px; padding-right: 30px; padding-top: 30px; padding-bottom: 30px;"
+                    <td style="width: 596px; vertical-align: top; padding: 30px;"
                         width="596">
 
-                        <!-- Your inverted logo is here -->
-                        <!--   <img style="width: 180px; max-width: 180px; height: 85px; margin-bottom: 15px; max-height: 85px; text-align: center; color: #ffffff;" alt="Logo" src="logo.svg" align="center" width="180" height="85"> -->
-
-                        <p
-                            style="margin-bottom:10px; margin-top: 0px; text-align:center; color:#fff;   font-family: 'Nunito Sans', sans-serif;">
+                        <p style="margin-bottom:10px; margin-top: 0px; text-align:center; color:#fff; font-family: 'Nunito Sans', sans-serif;">
                             Need More Help?
                         </p>
 
-                        <a href="#"
+                        <a href="<%= helpLink %>"
                             style="color:#fff; text-decoration: underline; text-align:center; display: block; font-family: 'Nunito Sans', sans-serif;">
                             We are here to help you out
                         </a>
@@ -152,7 +146,6 @@
         </table>
         <!-- End footer -->
     </div>
-
 </body>
 
 </html>

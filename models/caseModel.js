@@ -122,9 +122,9 @@ export const updateClientTotals = async (caseId, totalData) => {
 export const updateCompletedSteps = (case_id, completed_step) => {
     return new Promise((resolve, reject) => {
         let query = '';
-        if(completed_step === "final_report_completed"){
+        if (completed_step === "final_report_completed") {
             query = `UPDATE client_cases SET completed_step = ?, status = 1 WHERE id = ?`;
-        }else{
+        } else {
             query = `UPDATE client_cases SET completed_step = ? WHERE id = ?`;
         }
         db.query(query, [completed_step, case_id], (err, result) => {
@@ -158,8 +158,8 @@ export const upsertClientPeoplePolicy = async ({ case_id, client_people_id }) =>
     // Insert with defaults
     const insertQuery = `
         INSERT INTO client_people_policies
-        (case_id, client_people_id, minimum_recommended_life_coverage, insurance_carrier, policy_interest_rate)
-        VALUES (?, ?, 0.0, NULL, 0.0)
+        (case_id, client_people_id, minimum_recommended_life_coverage, insurance_carrier, policy_interest_rate, policy_start_date, actual_policy_start_date)
+        VALUES (?, ?, 0.0, NULL, 0.0, NULL, NULL)
     `;
     return queryAsync(insertQuery, [case_id, client_people_id]);
 };
@@ -821,7 +821,9 @@ export const upsertClientPeoplePolicies = async (caseId, clientPolicies) => {
                     client_people_id,
                     minimum_recommended_life_coverage = 0.0,
                     insurance_carrier = null,
-                    policy_interest_rate = 0.0
+                    policy_interest_rate = 0.0,
+                    policy_start_date = null,
+                    actual_policy_start_date = null
                 } = item;
 
                 if (policy_id) {
@@ -832,13 +834,17 @@ export const upsertClientPeoplePolicies = async (caseId, clientPolicies) => {
                             client_people_id = ?,
                             minimum_recommended_life_coverage = ?,
                             insurance_carrier = ?,
-                            policy_interest_rate = ?
+                            policy_interest_rate = ?,
+                            policy_start_date = ?,
+                            actual_policy_start_date = ?
                         WHERE id = ? AND case_id = ?
                     `, [
                         client_people_id,
                         minimum_recommended_life_coverage,
                         insurance_carrier,
                         policy_interest_rate,
+                        policy_start_date,
+                        actual_policy_start_date,
                         policy_id,
                         caseId
                     ]);
@@ -850,14 +856,18 @@ export const upsertClientPeoplePolicies = async (caseId, clientPolicies) => {
                             client_people_id,
                             minimum_recommended_life_coverage,
                             insurance_carrier,
-                            policy_interest_rate
+                            policy_interest_rate,
+                            policy_start_date,
+                            actual_policy_start_date
                         ) VALUES (?, ?, ?, ?, ?)
                     `, [
                         caseId,
                         client_people_id,
                         minimum_recommended_life_coverage,
                         insurance_carrier,
-                        policy_interest_rate
+                        policy_interest_rate,
+                        policy_start_date,
+                        actual_policy_start_date
                     ]);
                 }
             }
@@ -882,6 +892,8 @@ export const getClientPeoplePolicyByCaseId = (caseId) => {
                 CPP.minimum_recommended_life_coverage,
                 CPP.insurance_carrier,
                 CPP.policy_interest_rate,
+                CPP.policy_start_date,
+                CPP.actual_policy_start_date,
                 CPP.policy_file_name
             FROM client_peoples CP
             LEFT JOIN client_people_policies CPP 
@@ -979,7 +991,7 @@ export const getAllCases = (search = '', status = '') => {
         const params = [];
 
         // Optional search filter
-       if (search && search.trim() !== '') {
+        if (search && search.trim() !== '') {
             query += ` AND (
                 CC.full_name LIKE ? OR 
                 CC.case_name LIKE ? OR 
@@ -1229,6 +1241,8 @@ export const getPolicyWiseDetail = (caseId) => {
             CPP.insurance_carrier,
             CPP.minimum_recommended_life_coverage,
             CPP.policy_interest_rate,
+            CPP.policy_start_date,
+            CPP.actual_policy_start_date,
             CPP.policy_file_name,
             CPPD.year,
             CPPD.age,
@@ -1262,6 +1276,8 @@ export const getPolicyWiseDetail = (caseId) => {
                         insurance_carrier: row.insurance_carrier,
                         minimum_recommended_life_coverage: row.minimum_recommended_life_coverage,
                         policy_interest_rate: row.policy_interest_rate,
+                        policy_start_date: row.policy_start_date,
+                        actual_policy_start_date: row.actual_policy_start_date,
                         policy_file_name: row.policy_file_name,
                         policy_details: []
                     };
@@ -1299,6 +1315,8 @@ export const getFinalReportDetail = (caseId) => {
             CPP.insurance_carrier,
             CPP.minimum_recommended_life_coverage,
             CPP.policy_interest_rate,
+            CPP.policy_start_date,
+            CPP.actual_policy_start_date,
             CPP.policy_file_name,
             CPPD.year,
             CPPD.age,
@@ -1332,6 +1350,8 @@ export const getFinalReportDetail = (caseId) => {
                         insurance_carrier: row.insurance_carrier,
                         minimum_recommended_life_coverage: row.minimum_recommended_life_coverage,
                         policy_interest_rate: row.policy_interest_rate,
+                        policy_start_date: row.policy_start_date,
+                        actual_policy_start_date: row.actual_policy_start_date,
                         policy_file_name: row.policy_file_name,
                         policy_details: []
                     };

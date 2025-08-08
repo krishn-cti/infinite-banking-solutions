@@ -15,9 +15,12 @@ app.use(express.json());
 app.use(bodyParser.json());
 app.use(express.urlencoded());
 app.use(cors());
+
+// global variable for EJS
+app.locals.BASE_URL = `${process.env.BASE_PATH}:${process.env.PORT}`;
 app.set("view engine", "ejs");
 
-// Set the views directory
+// the views directory
 app.set("views", path.join(__dirname, "views"));
 app.use(express.static("public"));
 
@@ -28,11 +31,8 @@ app.use("/api", userRoutes);
 app.use("/api", caseRoutes);
 
 app.get("/success", (req, res) => {
-    res.render("success");
+    res.render("success", { appPath: process.env.APP_PATH });
 });
-// app.get("/reset-success", (req, res) => {
-//     res.render("reset-success");
-// });
 
 const PORT = process.env.PORT || 8000;
 
