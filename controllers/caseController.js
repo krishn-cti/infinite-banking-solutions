@@ -3,7 +3,7 @@ import fs from "fs";
 import xlsx from 'xlsx';
 import dayjs from "dayjs";
 import csv from "csv-parser";
-import { upsertClientCase, getCaseTypes, getClientPeopleByCaseId, getAllCasesByClientId, updateCompletedSteps, removeClientCredits, insertClientCredits, getClientCreditByCaseId, removeClientLoans, insertClientLoans, getClientLoanByCaseId, getClientInvestmentByCaseId, removeClientInvestments, insertClientInvestments, removeClientExpenses, insertClientExpenses, getClientExpenseByCaseId, getClientTotalByCaseId, removeClientProperties, insertClientProperties, getClientPropertyByCaseId, insertClientTotals, updateClientTotals, getClientPeoplePolicyByCaseId, getClientReductionByCaseId, removeClientReductions, insertClientReductions, updateClientFinalTotals, getClientFinalTotalByCaseId, insertClientFinalTotals, getCasesByCaseId, createCaseWithAllData, getAgentClientIds, getCasesOfAgent, updateClientPeopleById, insertClientPeople, deleteClientPeopleById, insertPolicyExcelData, getCombinedPolicy, updateClientPeoplePolicies, upsertClientPeoplePolicies, getPolicyWiseDetail, upsertClientPeoplePolicy, updateInvestmentCheckedStatus, updateOrInsertExpenseStatus, getAllCases, deleteClientCaseByCaseId, getFinalReportDetail } from '../models/caseModel.js';
+import { upsertClientCase, getCaseTypes, getClientPeopleByCaseId, getAllCasesByClientId, updateCompletedSteps, removeClientCredits, insertClientCredits, getClientCreditByCaseId, removeClientLoans, insertClientLoans, getClientLoanByCaseId, getClientInvestmentByCaseId, removeClientInvestments, insertClientInvestments, removeClientExpenses, insertClientExpenses, getClientExpenseByCaseId, getClientTotalByCaseId, removeClientProperties, insertClientProperties, getClientPropertyByCaseId, insertClientTotals, updateClientTotals, getClientPeoplePolicyByCaseId, getClientReductionByCaseId, removeClientReductions, insertClientReductions, updateClientFinalTotals, getClientFinalTotalByCaseId, insertClientFinalTotals, getCasesByCaseId, createCaseWithAllData, getAgentClientIds, getCasesOfAgent, updateClientPeopleById, insertClientPeople, deleteClientPeopleById, insertPolicyExcelData, getCombinedPolicy, updateClientPeoplePolicies, upsertClientPeoplePolicies, getPolicyWiseDetail, upsertClientPeoplePolicy, updateInvestmentCheckedStatus, updateOrInsertExpenseStatus, getAllCases, deleteClientCaseByCaseId, getFinalReportDetail, copyCase, updateCaseByCaseId, deleteClientCaseAndCopies } from '../models/caseModel.js';
 import { getUserById } from "../models/userModel.js";
 
 function convertDate(csvDate) {
@@ -416,6 +416,42 @@ export const removeClientPeople = async (req, res) => {
     }
 };
 
+// export const removeClientCase = async (req, res) => {
+//     const { case_id } = req.body;
+
+//     if (!case_id) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "Client case_id is required"
+//         });
+//     }
+
+//     try {
+//         const cases = await getCasesByCaseId(case_id);
+        
+//         const result = await deleteClientCaseByCaseId(case_id);
+
+//         if (result && result.affectedRows > 0) {
+//             return res.status(200).json({
+//                 success: true,
+//                 message: MSG.CASE_DELETED
+//             });
+//         } else {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: MSG.CASE_NOT_FOUND
+//             });
+//         }
+//     } catch (error) {
+//         console.error(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: MSG.INTERNAL_SERVER_ERROR,
+//             error: error.message
+//         });
+//     }
+// };
+
 export const removeClientCase = async (req, res) => {
     const { case_id } = req.body;
 
@@ -427,7 +463,32 @@ export const removeClientCase = async (req, res) => {
     }
 
     try {
-        const result = await deleteClientCaseByCaseId(case_id);
+        const caseData = await getCasesByCaseId(case_id);
+
+        if (!caseData) {
+            return res.status(404).json({
+                success: false,
+                message: MSG.CASE_NOT_FOUND
+            });
+        }
+
+        let result;
+
+        if (caseData.is_copy === 0) {
+            // Case is an ORIGINAL
+            // Delete original + all copies
+            result = await deleteClientCaseAndCopies(case_id);
+
+        } else if (caseData.is_copy === 1) {
+            // Case is a COPY
+            // Update original to has_copy = 0
+            if (caseData.copied_from_case_id) {
+                await updateCaseByCaseId(caseData.copied_from_case_id, { has_copy: 0 });
+            }
+
+            // Delete only this copy
+            result = await deleteClientCaseByCaseId(case_id);
+        }
 
         if (result && result.affectedRows > 0) {
             return res.status(200).json({
@@ -1701,3 +1762,22 @@ export const getFinalReport = async (req, res) => {
     }
 }
 
+export const copyCaseData = async (req, res) => {
+    const { case_id } = req.body;
+    const agentId = req.user.id;
+
+    try {
+        const { newCaseId, action } = await copyCase(case_id, agentId);
+        res.status(200).json({
+            success: true,
+            message: action === 'copy_created'
+                ? MSG.CASE_COPIED
+                : MSG.CASE_SYNCED,
+            action,
+            new_case_id: newCaseId,
+            has_copy: 1
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

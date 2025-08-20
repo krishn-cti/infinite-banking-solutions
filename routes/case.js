@@ -34,7 +34,8 @@ import {
     getPolicyDetails,
     getAllClientCases,
     removeClientCase,
-    getFinalReport
+    getFinalReport,
+    copyCaseData
 } from "../controllers/caseController.js";
 import { uploadCsv } from "../middleware/uploadCsv.js";
 
@@ -96,4 +97,5 @@ router.post('/get-combined-policy', getCombinedPolicyData);
 router.post('/get-policy-details', getPolicyDetails);
 router.post('/get-final-report', getFinalReport);
 
+router.post('/copy-case-data', auth, copyCaseData);
 export default router;

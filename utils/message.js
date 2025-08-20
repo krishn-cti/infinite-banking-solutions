@@ -72,6 +72,8 @@ const messages = {
     REPORT_DATA_NOT_FOUND: "Final report data not found.",
     COMBINED_POLICY_DATA_INSERTED: "Policy data uploaded successfully.",
     COMBINED_POLICY_DATA_INSERTION_FAILED: "Failed to upload policy data.",
+    CASE_SYNCED: "Case copy has been synced successfully.",
+    CASE_COPIED: "Case copy has been created successfully.",
 };
 
 export default messages

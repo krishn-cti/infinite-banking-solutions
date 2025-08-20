@@ -20,7 +20,7 @@ export const getAllCasesByClientId = (clientId, search, status) => {
         SELECT CC.*, CT.type_name AS type_name
         FROM client_cases AS CC
         LEFT JOIN case_types AS CT ON CC.case_type_id = CT.id
-        WHERE CC.client_id = ?
+        WHERE CC.is_copy = 0 AND CC.client_id = ?
         `;
 
         const params = [clientId];
@@ -98,6 +98,32 @@ export const upsertClientCase = (caseId, caseData) => {
                 resolve(result);
             });
         }
+    });
+};
+
+export const deleteClientCaseAndCopies = async (caseId) => {
+    return new Promise((resolve, reject) => {
+        db.query(
+            "DELETE FROM client_cases WHERE id = ? OR copied_from_case_id = ?",
+            [caseId, caseId],
+            (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            }
+        );
+    });
+};
+
+export const updateCaseByCaseId = async (caseId, updateObj) => {
+    return new Promise((resolve, reject) => {
+        db.query(
+            "UPDATE client_cases SET ? WHERE id = ?",
+            [updateObj, caseId],
+            (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            }
+        );
     });
 };
 
@@ -460,7 +486,7 @@ export const insertClientExpenses = async (caseId, clientExpenses) => {
 
 export const getClientExpenseByCaseId = (caseId) => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM client_expenses WHERE status = 1 AND case_id = ? ORDER BY id DESC`;
+        const query = `SELECT * FROM client_expenses WHERE status = 1 AND case_id = ?`;
         db.query(query, [caseId], (err, results) => {
             if (err) return reject(err);
             resolve(results);
@@ -470,7 +496,7 @@ export const getClientExpenseByCaseId = (caseId) => {
 
 export const getClientTotalByCaseId = (caseId) => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM client_totals WHERE status = 1 AND case_id = ? ORDER BY id DESC`;
+        const query = `SELECT * FROM client_totals WHERE status = 1 AND case_id = ?`;
         db.query(query, [caseId], (err, results) => {
             if (err) return reject(err);
             resolve(results[0]);
@@ -523,127 +549,6 @@ export const updateOrInsertExpenseStatus = (caseId, expenseName, isChecked) => {
         });
     });
 };
-
-// export const getClientReductionByCaseId = (caseId) => {
-//     return new Promise((resolve, reject) => {
-//         const queryReduction = `SELECT * FROM client_reductions WHERE status = 1 AND case_id = ? ORDER BY id DESC`;
-//         const queryInvestments = `
-//             SELECT id, investment_name, balance_amount, monthly_allotment, increase_percent, projected_amount, is_checked 
-//             FROM client_investments 
-//             WHERE status = 1 AND case_id = ?
-//         `;
-//         const queryExpenses = `SELECT * FROM client_expenses WHERE status = 1 AND case_id = ?`;
-//         const queryProperty = `SELECT * FROM client_properties WHERE status = 1 AND case_id = ?`;
-//         const queryCredit = `SELECT monthly_payment FROM client_credits WHERE status = 1 AND case_id = ?`;
-//         const queryLoan = `SELECT monthly_emi FROM client_loans WHERE status = 1 AND case_id = ?`;
-
-//         db.query(queryReduction, [caseId], (err1, reductions) => {
-//             if (err1) return reject(err1);
-
-//             db.query(queryInvestments, [caseId], (err2, investments) => {
-//                 if (err2) return reject(err2);
-
-//                 db.query(queryExpenses, [caseId], (err3, expenses) => {
-//                     if (err3) return reject(err3);
-
-//                     db.query(queryProperty, [caseId], (err4, properties) => {
-//                         if (err4) return reject(err4);
-
-//                         db.query(queryCredit, [caseId], (err5, credits) => {
-//                             if (err5) return reject(err5);
-
-//                             db.query(queryLoan, [caseId], (err6, loans) => {
-//                                 if (err6) return reject(err6);
-
-//                                 // Total investment
-//                                 const total_investment = investments.reduce(
-//                                     (sum, inv) => sum + parseFloat(inv.monthly_allotment || 0),
-//                                     0
-//                                 );
-
-//                                 // Base expense breakdown
-//                                 const baseFields = [
-//                                     'food', 'clothing_personal_items', 'entertainment', 'travel',
-//                                     'fees_and_education', 'term_life_insurance', 'di_ci_insurance',
-//                                     'health_gym_fees', 'kids_activities_sports', 'day_care',
-//                                     'child_support', 'vehicle_insurance', 'vehicle_gas',
-//                                     'vehicle_maintenance', 'vehicle_leases', 'tax_installment',
-//                                     'cell_phones_and_subscriptions', 'gifts', 'additional_expenses', 'others'
-//                                 ];
-
-//                                 const base_expense = {};
-//                                 for (const field of baseFields) base_expense[field] = 0;
-
-//                                 expenses.forEach(row => {
-//                                     baseFields.forEach(field => {
-//                                         base_expense[field] += parseFloat(row[field] || 0);
-//                                     });
-//                                 });
-
-//                                 const total_base_expense = Object.values(base_expense).reduce((a, b) => a + b, 0);
-
-//                                 // Property expense breakdown
-//                                 const property_expense = {
-//                                     property_monthly_payment: 0,
-//                                     heloc_monthly_payment: 0,
-//                                     monthly_mortgage_insurance_expense: 0,
-//                                     monthly_mortgage_extra_expense: 0,
-//                                     monthly_property_tax_expense: 0,
-//                                     monthly_property_insurance_expense: 0,
-//                                     monthly_utility_expense: 0,
-//                                     community_condo_fees_expense: 0
-//                                 };
-
-//                                 properties.forEach(row => {
-//                                     property_expense.property_monthly_payment += parseFloat(row.monthly_payment || 0);
-//                                     property_expense.heloc_monthly_payment += parseFloat(row.heloc_monthly_payment || 0);
-//                                     property_expense.monthly_mortgage_insurance_expense += parseFloat(row.monthly_mortgage_insurance_expense || 0);
-//                                     property_expense.monthly_mortgage_extra_expense += parseFloat(row.monthly_mortgage_extra_expense || 0);
-//                                     property_expense.monthly_property_tax_expense += parseFloat(row.monthly_property_tax_expense || 0);
-//                                     property_expense.monthly_property_insurance_expense += parseFloat(row.monthly_property_insurance_expense || 0);
-//                                     property_expense.monthly_utility_expense += parseFloat(row.monthly_utility_expense || 0);
-//                                     property_expense.community_condo_fees_expense += parseFloat(row.community_condo_fees_expense || 0);
-//                                 });
-
-//                                 const total_property_expense = Object.values(property_expense).reduce((a, b) => a + b, 0);
-
-//                                 // Credit expense breakdown
-//                                 const credit_expense = {
-//                                     monthly_payment: credits.reduce((sum, row) => sum + parseFloat(row.monthly_payment || 0), 0)
-//                                 };
-
-//                                 // Loan expense breakdown
-//                                 const loan_expense = {
-//                                     monthly_emi: loans.reduce((sum, row) => sum + parseFloat(row.monthly_emi || 0), 0)
-//                                 };
-
-//                                 // Total expense
-//                                 const total_expense =
-//                                     total_base_expense + total_property_expense + credit_expense.monthly_payment + loan_expense.monthly_emi;
-
-//                                 const merged_expenses = {
-//                                     ...base_expense,
-//                                     ...property_expense,
-//                                     credit_monthly_payment: credit_expense.monthly_payment,
-//                                     loan_monthly_emi: loan_expense.monthly_emi
-//                                 };
-
-//                                 resolve({
-//                                     reductions: reductions.length > 0 ? reductions[0] : null,
-//                                     investments,
-//                                     expenses: merged_expenses,
-//                                     total_investment,
-//                                     total_expense: parseFloat(total_expense.toFixed(2))
-//                                 });
-
-//                             });
-//                         });
-//                     });
-//                 });
-//             });
-//         });
-//     });
-// };
 
 export const getClientReductionByCaseId = (caseId) => {
     return new Promise((resolve, reject) => {
@@ -913,7 +818,7 @@ export const getClientPeoplePolicyByCaseId = (caseId) => {
 
 export const getAgentClientIds = (agentId) => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT id FROM users WHERE created_by = ? AND status = 1`;
+        const query = `SELECT id FROM users WHERE created_by = ?`;
         db.query(query, [agentId], (err, results) => {
             if (err) return reject(err);
             const clientIds = results.map(row => row.id);
@@ -1374,6 +1279,130 @@ export const getFinalReportDetail = (caseId) => {
             }
 
             resolve(Object.values(grouped));
+        });
+    });
+};
+
+const tablesToCopy = [
+    'client_peoples',
+    'client_properties',
+    'client_credits',
+    'client_loans',
+    'client_investments',
+    'client_expenses',
+    'client_expense_statuses',
+    'client_totals',
+    'client_reductions',
+    'client_final_totals'
+];
+
+export const copyCase = (caseId, agentId) => {
+    return new Promise((resolve, reject) => {
+        db.beginTransaction(err => {
+            if (err) return reject(err);
+
+            // Check if a copy already exists
+            db.query(
+                `SELECT id FROM client_cases WHERE copied_from_case_id = ? AND is_copy = 1`,
+                [caseId],
+                (err, copyRows) => {
+                    if (err) return db.rollback(() => reject(err));
+
+                    const hadOldCopy = copyRows.length > 0;
+
+                    const removeOldCopy = (callback) => {
+                        if (!hadOldCopy) return callback();
+
+                        const copyCaseId = copyRows[0].id;
+
+                        db.query(`DELETE FROM client_cases WHERE id = ?`, [copyCaseId], (err) => {
+                            if (err) return db.rollback(() => reject(err));
+                            callback();
+                        });
+                    };
+
+                    removeOldCopy(() => {
+                        db.query(`SELECT * FROM client_cases WHERE id = ?`, [caseId], (err, caseRows) => {
+                            if (err) return db.rollback(() => reject(err));
+                            if (!caseRows.length) return db.rollback(() => reject(new Error('Original case not found')));
+
+                            const originalCase = caseRows[0];
+
+                            // Insert new copy
+                            const insertQuery = `INSERT INTO client_cases (copied_from_case_id, client_id, case_type_id, case_name, full_name, completed_step, created_by,  status, created_at, updated_at, is_copy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 1)`;
+
+                            const insertValues = [
+                                caseId,
+                                originalCase.client_id,
+                                originalCase.case_type_id,
+                                originalCase.case_name + ' (Copy)',
+                                originalCase.full_name,
+                                originalCase.completed_step,
+                                agentId,
+                                originalCase.status
+                            ];
+
+                            db.query(insertQuery, insertValues, (err, insertResult) => {
+                                if (err) return db.rollback(() => reject(err));
+                                const newCaseId = insertResult.insertId;
+
+                                // Update has_copy on original case
+                                db.query(`UPDATE client_cases SET has_copy = 1 WHERE id = ?`, [caseId], (err) => {
+                                    if (err) return db.rollback(() => reject(err));
+
+                                    // Copy child tables
+                                    let tableIndex = 0;
+
+                                    const copyNextTable = () => {
+                                        if (tableIndex >= tablesToCopy.length) {
+                                            return db.commit(err => {
+                                                if (err) return db.rollback(() => reject(err));
+                                                resolve({
+                                                    newCaseId,
+                                                    action: hadOldCopy ? 'copy_recreated' : 'copy_created'
+                                                });
+                                            });
+                                        }
+
+                                        const table = tablesToCopy[tableIndex];
+                                        db.query(`SELECT * FROM ${table} WHERE case_id = ?`, [caseId], (err, rows) => {
+                                            if (err) return db.rollback(() => reject(err));
+
+                                            let rowIndex = 0;
+                                            const copyNextRow = () => {
+                                                if (rowIndex >= rows.length) {
+                                                    tableIndex++;
+                                                    return copyNextTable();
+                                                }
+
+                                                const row = rows[rowIndex];
+                                                delete row.id;
+                                                row.case_id = newCaseId;
+
+                                                const columns = Object.keys(row);
+                                                const values = Object.values(row);
+
+                                                db.query(
+                                                    `INSERT INTO ${table} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`,
+                                                    values,
+                                                    (err) => {
+                                                        if (err) return db.rollback(() => reject(err));
+                                                        rowIndex++;
+                                                        copyNextRow();
+                                                    }
+                                                );
+                                            };
+                                            copyNextRow();
+                                        });
+                                    };
+
+                                    copyNextTable();
+                                });
+                            });
+                        });
+                    });
+                }
+            );
         });
     });
 };
