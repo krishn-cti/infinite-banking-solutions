@@ -35,7 +35,8 @@ import {
     getAllClientCases,
     removeClientCase,
     getFinalReport,
-    copyCaseData
+    copyCaseData,
+    createClientPlan
 } from "../controllers/caseController.js";
 import { uploadCsv } from "../middleware/uploadCsv.js";
 
@@ -98,4 +99,6 @@ router.post('/get-policy-details', getPolicyDetails);
 router.post('/get-final-report', getFinalReport);
 
 router.post('/copy-case-data', auth, copyCaseData);
+
+router.post('/create-plan', createClientPlan);
 export default router;

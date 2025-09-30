@@ -1,10 +1,13 @@
 import MSG from "../utils/message.js";
 import fs from "fs";
-import xlsx from 'xlsx';
+import ExcelJS from "exceljs";
 import dayjs from "dayjs";
 import csv from "csv-parser";
 import { upsertClientCase, getCaseTypes, getClientPeopleByCaseId, getAllCasesByClientId, updateCompletedSteps, removeClientCredits, insertClientCredits, getClientCreditByCaseId, removeClientLoans, insertClientLoans, getClientLoanByCaseId, getClientInvestmentByCaseId, removeClientInvestments, insertClientInvestments, removeClientExpenses, insertClientExpenses, getClientExpenseByCaseId, getClientTotalByCaseId, removeClientProperties, insertClientProperties, getClientPropertyByCaseId, insertClientTotals, updateClientTotals, getClientPeoplePolicyByCaseId, getClientReductionByCaseId, removeClientReductions, insertClientReductions, updateClientFinalTotals, getClientFinalTotalByCaseId, insertClientFinalTotals, getCasesByCaseId, createCaseWithAllData, getAgentClientIds, getCasesOfAgent, updateClientPeopleById, insertClientPeople, deleteClientPeopleById, insertPolicyExcelData, getCombinedPolicy, updateClientPeoplePolicies, upsertClientPeoplePolicies, getPolicyWiseDetail, upsertClientPeoplePolicy, updateInvestmentCheckedStatus, updateOrInsertExpenseStatus, getAllCases, deleteClientCaseByCaseId, getFinalReportDetail, copyCase, updateCaseByCaseId, deleteClientCaseAndCopies } from '../models/caseModel.js';
 import { getUserById } from "../models/userModel.js";
+import { createPlan } from "../utils/calculations/plan/index.js";
+import { createPlanWithNoProp } from "../utils/calculationWithNoProp/plan/index.js";
+import { getCaseFinancialData } from "../models/clientPlanModel.js";
 
 function convertDate(csvDate) {
     const [day, month, year] = csvDate.split('-');
@@ -428,7 +431,7 @@ export const removeClientPeople = async (req, res) => {
 
 //     try {
 //         const cases = await getCasesByCaseId(case_id);
-        
+
 //         const result = await deleteClientCaseByCaseId(case_id);
 
 //         if (result && result.affectedRows > 0) {
@@ -1614,6 +1617,76 @@ export const uploadBulkCaseByCsv = async (req, res) => {
 };
 
 // API for upload excel or csv file for policy
+// export const uploadPolicyExcel = async (req, res) => {
+//     const file = req.file;
+//     const policy_id = req.body.policy_id;
+//     const case_id = req.body.case_id;
+
+//     if (!file || !policy_id || !case_id) {
+//         return res.status(400).json({ success: false, message: 'File, policy_id and case_id are required' });
+//     }
+
+//     const uploaded_file_name = file.originalname;
+
+//     try {
+//         const workbook = xlsx.readFile(file.path);
+//         const sheetName = workbook.SheetNames[0];
+//         const rawRows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false });
+
+//         const cleanNumber = (val) => {
+//             if (!val) return 0.0;
+//             const cleaned = String(val).replace(/,/g, '').trim();
+//             return parseFloat(cleaned) || 0.0;
+//         };
+
+//         const normalizeKey = (key) =>
+//             key.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+
+//         const headerMap = {};
+//         const firstRow = rawRows[0];
+//         if (firstRow) {
+//             Object.keys(firstRow).forEach((originalKey) => {
+//                 const normalized = normalizeKey(originalKey);
+//                 headerMap[normalized] = originalKey;
+//             });
+//         }
+
+//         const getValue = (row, expectedKey) => {
+//             const normalizedKey = normalizeKey(expectedKey);
+//             const actualKey = headerMap[normalizedKey];
+//             return row[actualKey];
+//         };
+
+//         const policies = rawRows.map(row => {
+//             const yearAgeRaw = getValue(row, 'Year | Age') || '';
+//             const [yearRaw, ageRaw] = String(yearAgeRaw).split('|');
+
+//             return {
+//                 policy_id,
+//                 case_id,
+//                 year: parseInt(yearRaw?.trim()) || null,
+//                 age: parseInt(ageRaw?.trim()) || null,
+//                 guaranteed_premium: cleanNumber(getValue(row, 'Guaranteed Required Annual Premium')),
+//                 deposit: cleanNumber(getValue(row, 'Excelerator Deposit Option Annual Deposit')),
+//                 cash_premiums: cleanNumber(getValue(row, 'Cash Premiums')),
+//                 dividend: cleanNumber(getValue(row, 'Annual Dividend')),
+//                 cash_increase: cleanNumber(getValue(row, 'Annual Increase in Total Cash Value')),
+//                 total_cash: cleanNumber(getValue(row, 'Total Cash Value')),
+//                 total_death: cleanNumber(getValue(row, 'Total Death Benefit')),
+//             };
+//         });
+
+//         await insertPolicyExcelData(policies);
+//         await updateClientPeoplePolicies(policy_id, uploaded_file_name);
+//         fs.unlinkSync(file.path);
+
+//         return res.status(200).json({ success: true, message: MSG.COMBINED_POLICY_DATA_INSERTED });
+//     } catch (err) {
+//         console.error(err);
+//         return res.status(500).json({ success: false, message: MSG.COMBINED_POLICY_DATA_INSERTION_FAILED, error: err.message });
+//     }
+// };
+
 export const uploadPolicyExcel = async (req, res) => {
     const file = req.file;
     const policy_id = req.body.policy_id;
@@ -1626,9 +1699,19 @@ export const uploadPolicyExcel = async (req, res) => {
     const uploaded_file_name = file.originalname;
 
     try {
-        const workbook = xlsx.readFile(file.path);
-        const sheetName = workbook.SheetNames[0];
-        const rawRows = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(file.path);
+
+        const worksheet = workbook.worksheets[0]; // first sheet
+
+        const rows = [];
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return; // skip header
+            rows.push(row.values);
+        });
+
+        // Extract header row (row.values starts from index 1)
+        const headerRow = worksheet.getRow(1).values.map(h => String(h || "").trim());
 
         const cleanNumber = (val) => {
             if (!val) return 0.0;
@@ -1639,20 +1722,30 @@ export const uploadPolicyExcel = async (req, res) => {
         const normalizeKey = (key) =>
             key.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
+        // Map normalized headers to actual headers
         const headerMap = {};
-        const firstRow = rawRows[0];
-        if (firstRow) {
-            Object.keys(firstRow).forEach((originalKey) => {
-                const normalized = normalizeKey(originalKey);
-                headerMap[normalized] = originalKey;
-            });
-        }
+        headerRow.forEach((header) => {
+            const normalized = normalizeKey(header);
+            headerMap[normalized] = header;
+        });
 
-        const getValue = (row, expectedKey) => {
+        const getValue = (rowObj, expectedKey) => {
             const normalizedKey = normalizeKey(expectedKey);
             const actualKey = headerMap[normalizedKey];
-            return row[actualKey];
+            return rowObj[actualKey];
         };
+
+        // Convert each row to an object { header: value }
+        const rawRows = [];
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return;
+            const rowObj = {};
+            row.values.forEach((cell, idx) => {
+                if (idx === 0) return; // skip Excel's empty index 0
+                rowObj[headerRow[idx]] = cell;
+            });
+            rawRows.push(rowObj);
+        });
 
         const policies = rawRows.map(row => {
             const yearAgeRaw = getValue(row, 'Year | Age') || '';
@@ -1680,7 +1773,11 @@ export const uploadPolicyExcel = async (req, res) => {
         return res.status(200).json({ success: true, message: MSG.COMBINED_POLICY_DATA_INSERTED });
     } catch (err) {
         console.error(err);
-        return res.status(500).json({ success: false, message: MSG.COMBINED_POLICY_DATA_INSERTION_FAILED, error: err.message });
+        return res.status(500).json({
+            success: false,
+            message: MSG.COMBINED_POLICY_DATA_INSERTION_FAILED,
+            error: err.message
+        });
     }
 };
 
@@ -1779,5 +1876,89 @@ export const copyCaseData = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+export const createClientPlan = async (req, res) => {
+    const { case_id } = req.body;
+
+    try {
+        // Fetch case details
+        const caseDetails = await getCasesByCaseId(case_id);
+
+        // Handle case not found
+        if (!caseDetails) {
+            return res.status(404).json({
+                success: false,
+                message: MSG.CASE_NOT_FOUND,
+            });
+        }
+
+        // Fetch financial data
+        let data = await getCaseFinancialData(case_id);
+
+        // Prepare expenses
+        let monthlyExpenses = data.monthlyExpenses?.[0] || {};
+        data.expenses = {
+            ...monthlyExpenses,
+            monthly_policy_premium_expense: 0,
+        };
+        delete data.monthlyExpenses;
+
+        // Prepare filtered data
+        let filterData = {
+            people: data.people,
+            properties: data.properties,
+            credit: data.credit,
+            loans: data.loans,
+            investments: data.investments,
+            expenses: data.expenses,
+            totals: {
+                calculated_annual_budget_available: 0,
+                calculated_annual_principal_payment: 0,
+                calculated_monthly_final_surplus_budget: 0,
+                calculated_monthly_preliminary_surplus_budget: 0,
+                calculated_monthly_total_expenses: 0,
+                calculated_monthly_total_income: 0,
+                calculated_monthly_total_investment_allotments: 0,
+                calculated_monthly_total_reduction_in_expenses: 0,
+                monthly_reduction_on_investment_accounts_allotment: 0,
+                monthly_reduction_on_replaced_insurance_expenses: 0,
+            },
+        };
+
+        // Get combined policy data
+        let combinedData = await getCombinedPolicy(case_id);
+        combinedData.map(elem => {
+            elem.guaranteed_required_annual_premium = elem.total_guaranteed_premium;
+            delete elem.total_guaranteed_premium;
+
+            elem.total_cash_value = elem.total_cash;
+            delete elem.total_cash;
+        });
+
+        // Generate the plan
+        let create_plan = "";
+        if (caseDetails.case_type_id == 4) {
+            create_plan = createPlanWithNoProp(filterData, combinedData);
+        } else {
+            create_plan = createPlan(filterData, combinedData);
+        }
+
+        // Return the final plan as response
+        return res.status(200).json({
+            success: true,
+            message: MSG.CLIENT_PLAN_CREATED,
+            plan: create_plan,
+            // caseData: filterData,
+            // policyData: combinedData,
+        });
+    } catch (error) {
+        console.error("Error creating client plan:", error);
+        return res.status(500).json({
+            success: false,
+            message: MSG.INTERNAL_SERVER_ERROR,
+            error: error.message,
+        });
     }
 };
