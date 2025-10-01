@@ -6,14 +6,14 @@ import {
 
 export function calculateMonthlyPaymentExpense(loan, monthsOffset = 0) {
   if (monthsOffset === 0) {
-    const monthlyRate = monthlyInterest(loan.interest_rate);
+    const monthlyRate = monthlyInterest(loan?.interest_rate);
     let monthlyPayment;
     if (monthlyRate === 0) {
-      monthlyPayment = loan.financed_amount / loan.loan_length_in_months;
+      monthlyPayment = loan?.financed_amount / loan?.loan_length_in_months;
     } else {
       monthlyPayment =
-        (loan.financed_amount * monthlyRate) /
-        (1 - Math.pow(1 + monthlyRate, -loan.loan_length_in_months));
+        (loan?.financed_amount * monthlyRate) /
+        (1 - Math.pow(1 + monthlyRate, -loan?.loan_length_in_months));
     }
     return monthlyPayment;
   }
@@ -29,8 +29,8 @@ export function calculateMonthlyPaymentExpense(loan, monthsOffset = 0) {
   }
   // Use the current month's payment amount
   const monthlyPayment =
-    parseFloat(schedule[currentMonth - 1].principal_payment) +
-    parseFloat(schedule[currentMonth - 1].interest_payment);
+    parseFloat(schedule[currentMonth - 1]?.principal_payment) +
+    parseFloat(schedule[currentMonth - 1]?.interest_payment);
 
   return monthlyPayment;
 }

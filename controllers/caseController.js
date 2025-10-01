@@ -8,6 +8,7 @@ import { getUserById } from "../models/userModel.js";
 import { createPlan } from "../utils/calculations/plan/index.js";
 import { createPlanWithNoProp } from "../utils/calculationWithNoProp/plan/index.js";
 import { getCaseFinancialData } from "../models/clientPlanModel.js";
+import { generateReport } from "../utils/reports/index.js";
 
 function convertDate(csvDate) {
     const [day, month, year] = csvDate.split('-');
@@ -1879,6 +1880,93 @@ export const copyCaseData = async (req, res) => {
     }
 };
 
+// export const createClientPlan = async (req, res) => {
+//     const { case_id } = req.body;
+
+//     try {
+//         // Fetch case details
+//         const caseDetails = await getCasesByCaseId(case_id);
+
+//         // Handle case not found
+//         if (!caseDetails) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: MSG.CASE_NOT_FOUND,
+//             });
+//         }
+
+//         // Fetch financial data
+//         let data = await getCaseFinancialData(case_id);
+
+//         // Prepare expenses
+//         let monthlyExpenses = data.monthlyExpenses?.[0] || {};
+//         data.expenses = {
+//             ...monthlyExpenses,
+//             monthly_policy_premium_expense: 0,
+//         };
+//         delete data.monthlyExpenses;
+
+//         // Prepare filtered data
+//         let filterData = {
+//             people: data.people,
+//             properties: data.properties,
+//             credit: data.credit,
+//             loans: data.loans,
+//             investments: data.investments,
+//             expenses: data.expenses,
+//             totals: {
+//                 calculated_annual_budget_available: 0,
+//                 calculated_annual_principal_payment: 0,
+//                 calculated_monthly_final_surplus_budget: 0,
+//                 calculated_monthly_preliminary_surplus_budget: 0,
+//                 calculated_monthly_total_expenses: 0,
+//                 calculated_monthly_total_income: 0,
+//                 calculated_monthly_total_investment_allotments: 0,
+//                 calculated_monthly_total_reduction_in_expenses: 0,
+//                 monthly_reduction_on_investment_accounts_allotment: 0,
+//                 monthly_reduction_on_replaced_insurance_expenses: 0,
+//             },
+//         };
+
+//         // Get combined policy data
+//         let combinedData = await getCombinedPolicy(case_id);
+//         combinedData.map(elem => {
+//             elem.guaranteed_required_annual_premium = elem.total_guaranteed_premium;
+//             delete elem.total_guaranteed_premium;
+
+//             elem.total_cash_value = elem.total_cash;
+//             delete elem.total_cash;
+//         });
+
+//         // Generate the plan
+//         let create_plan = "";
+//         if (caseDetails.case_type_id == 4) {
+//             create_plan = createPlanWithNoProp(filterData, combinedData);
+//         } else {
+//             create_plan = createPlan(filterData, combinedData);
+//         }
+
+//         const report = generateReport(create_plan, combinedData, filterData);
+
+//         // Return the final plan as response
+//         return res.status(200).json({
+//             success: true,
+//             message: MSG.CLIENT_PLAN_CREATED,
+//             plan: create_plan,
+//             report: report,
+//             // caseData: filterData,
+//             // policyData: combinedData,
+//         });
+//     } catch (error) {
+//         console.error("Error creating client plan:", error);
+//         return res.status(500).json({
+//             success: false,
+//             message: MSG.INTERNAL_SERVER_ERROR,
+//             error: error.message,
+//         });
+//     }
+// };
+
 export const createClientPlan = async (req, res) => {
     const { case_id } = req.body;
 
@@ -1908,7 +1996,7 @@ export const createClientPlan = async (req, res) => {
         // Prepare filtered data
         let filterData = {
             people: data.people,
-            properties: data.properties,
+            properties: data.properties || [], // Default to empty array if undefined
             credit: data.credit,
             loans: data.loans,
             investments: data.investments,
@@ -1927,6 +2015,21 @@ export const createClientPlan = async (req, res) => {
             },
         };
 
+        // Add fallback for missing properties or mortgage
+        if (!filterData.properties || !filterData.properties.length) {
+            console.warn('No properties found in case, adding default empty property structure');
+            filterData.properties = [{ mortgage: null }]; // Indicate no mortgage
+        } else if (!filterData.properties[0]?.mortgage) {
+            console.warn('Mortgage data missing, adding default mortgage');
+            filterData.properties[0].mortgage = {
+                financed_amount: 100000, // Default value
+                interest_rate: 3.5,     // Default value
+                calculated_monthly_payment_expense: 500, // Default value
+                loan_length_in_months: 120, // Default value
+                loan_start_date: new Date().toISOString().slice(0, 10), // Current date
+            };
+        }
+
         // Get combined policy data
         let combinedData = await getCombinedPolicy(case_id);
         combinedData.map(elem => {
@@ -1939,19 +2042,20 @@ export const createClientPlan = async (req, res) => {
 
         // Generate the plan
         let create_plan = "";
-        if (caseDetails.case_type_id == 4) {
+        if (caseDetails.case_type_id == 3 || caseDetails.case_type_id == 4) {
             create_plan = createPlanWithNoProp(filterData, combinedData);
         } else {
             create_plan = createPlan(filterData, combinedData);
         }
+
+        const report = generateReport(create_plan, combinedData, filterData);
 
         // Return the final plan as response
         return res.status(200).json({
             success: true,
             message: MSG.CLIENT_PLAN_CREATED,
             plan: create_plan,
-            // caseData: filterData,
-            // policyData: combinedData,
+            report: report,
         });
     } catch (error) {
         console.error("Error creating client plan:", error);
@@ -1959,6 +2063,7 @@ export const createClientPlan = async (req, res) => {
             success: false,
             message: MSG.INTERNAL_SERVER_ERROR,
             error: error.message,
+            details: error.stack, // Include stack trace for debugging
         });
     }
 };
