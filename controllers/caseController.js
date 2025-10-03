@@ -15,6 +15,15 @@ function convertDate(csvDate) {
     return `${year}-${month}-${day}`; // YYYY-MM-DD
 }
 
+function formatDate(dbDate) {
+    if (!dbDate) return null;
+    const date = new Date(dbDate);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`; // YYYY-MM-DD
+}
+
 // function for heloc annual calculation
 function calculateYearlyHelocPrincipal(property, year = new Date().getFullYear()) {
     const startDate = new Date(property.loan_start_date);
@@ -133,7 +142,8 @@ export const createClientCase = async (req, res) => {
         case_name,
         full_name,
         completed_step,
-        agent_id
+        agent_id,
+        plan_start_date
     } = req.body;
 
     const clientInfo = await getUserById(client_id);
@@ -145,7 +155,8 @@ export const createClientCase = async (req, res) => {
             case_name,
             full_name: full_name ?? clientInfo.name,
             completed_step,
-            created_by: agent_id ?? null
+            created_by: agent_id ?? null,
+            plan_start_date
         };
 
         const response = await upsertClientCase(client_case_id, caseData);
@@ -227,6 +238,8 @@ export const getClientCaseDetail = async (req, res) => {
                 message: MSG.CASE_NOT_FOUND
             });
         }
+
+        cases.plan_start_date = formatDate(cases.plan_start_date);
 
         return res.status(200).json({
             success: true,
@@ -2017,10 +2030,10 @@ export const createClientPlan = async (req, res) => {
 
         // Add fallback for missing properties or mortgage
         if (!filterData.properties || !filterData.properties.length) {
-            console.warn('No properties found in case, adding default empty property structure');
+            // console.warn('No properties found in case, adding default empty property structure');
             filterData.properties = [{ mortgage: null }]; // Indicate no mortgage
         } else if (!filterData.properties[0]?.mortgage) {
-            console.warn('Mortgage data missing, adding default mortgage');
+            // console.warn('Mortgage data missing, adding default mortgage');
             filterData.properties[0].mortgage = {
                 financed_amount: 100000, // Default value
                 interest_rate: 3.5,     // Default value

@@ -1329,7 +1329,7 @@ export const copyCase = (caseId, agentId) => {
                             const originalCase = caseRows[0];
 
                             // Insert new copy
-                            const insertQuery = `INSERT INTO client_cases (copied_from_case_id, client_id, case_type_id, case_name, full_name, completed_step, created_by,  status, created_at, updated_at, is_copy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 1)`;
+                            const insertQuery = `INSERT INTO client_cases (copied_from_case_id, client_id, case_type_id, case_name, full_name, completed_step, created_by,  status, plan_start_date, created_at, updated_at, is_copy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 1)`;
 
                             const insertValues = [
                                 caseId,
@@ -1339,7 +1339,8 @@ export const copyCase = (caseId, agentId) => {
                                 originalCase.full_name,
                                 originalCase.completed_step,
                                 agentId,
-                                originalCase.status
+                                originalCase.status,
+                                originalCase.plan_start_date
                             ];
 
                             db.query(insertQuery, insertValues, (err, insertResult) => {

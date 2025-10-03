@@ -1,41 +1,35 @@
 // utils/reports/MotrgageHelocCashLoan.js
 
 /**
- * Calculates the total balances for mortgage, HELOC, and cash loan (policy loan) based on the plan data.
+ * Calculates the year-wise balances for mortgage, HELOC, and cash loan (policy loan) based on the plan data.
  * @param {Array} plan - Array of year-wise financial data from createPlan.
- * @returns {Object} - Object containing total starting mortgage balance, total starting HELOC balance,
- *                     total ending policy cash value, and total starting policy loan balance.
+ * @returns {Object} - Object containing arrays of starting mortgage balance, starting HELOC balance,
+ *                     ending policy cash value, and starting policy loan balance for each year.
  */
 export default function calculateMortgageHelocCashLoan(plan) {
     if (!plan || !Array.isArray(plan)) {
         throw new Error('Invalid plan data provided');
     }
 
-    // Extract arrays of values, handling NaN or undefined with 0
+    // Extract arrays of values, handling NaN or undefined with 0 and rounding to 2 decimal places
     const starting_mortgage_balance = plan.map((item) =>
-        parseFloat(item.calculations?.starting_mortgage_balance) || 0
+        Number((parseFloat(item.calculations?.starting_mortgage_balance) || 0).toFixed(2))
     );
     const starting_heloc_balance = plan.map((item) =>
-        parseFloat(item.calculations?.starting_heloc_balance) || 0
+        Number((parseFloat(item.calculations?.starting_heloc_balance) || 0).toFixed(2))
     );
     const ending_policy_cash_value = plan.map((item) =>
-        parseFloat(item.calculations?.ending_policy_cash_value) || 0
+        Number((parseFloat(item.calculations?.ending_policy_cash_value) || 0).toFixed(2))
     );
     const starting_policy_loan_balance = plan.map((item) =>
-        parseFloat(item.calculations?.starting_policy_loan_balance) || 0
+        Number((parseFloat(item.calculations?.starting_policy_loan_balance) || 0).toFixed(2))
     );
 
-    // Calculate totals
-    const totalStartingMortgageBalance = starting_mortgage_balance.reduce((sum, value) => sum + value, 0);
-    const totalStartingHelocBalance = starting_heloc_balance.reduce((sum, value) => sum + value, 0);
-    const totalEndingPolicyCashValue = ending_policy_cash_value.reduce((sum, value) => sum + value, 0);
-    const totalStartingPolicyLoanBalance = starting_policy_loan_balance.reduce((sum, value) => sum + value, 0);
-
-    // Return the result as an object with rounded values
+    // Return the result as an object with year-wise arrays
     return {
-        totalStartingMortgageBalance: Number(totalStartingMortgageBalance.toFixed(2)),
-        totalStartingHelocBalance: Number(totalStartingHelocBalance.toFixed(2)),
-        totalEndingPolicyCashValue: Number(totalEndingPolicyCashValue.toFixed(2)),
-        totalStartingPolicyLoanBalance: Number(totalStartingPolicyLoanBalance.toFixed(2)),
+        startingMortgageBalance: starting_mortgage_balance,
+        startingHelocBalance: starting_heloc_balance,
+        endingPolicyCashValue: ending_policy_cash_value,
+        startingPolicyLoanBalance: starting_policy_loan_balance,
     };
 }
