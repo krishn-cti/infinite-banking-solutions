@@ -9,6 +9,7 @@ import { createPlan } from "../utils/calculations/plan/index.js";
 import { createPlanWithNoProp } from "../utils/calculationWithNoProp/plan/index.js";
 import { getCaseFinancialData } from "../models/clientPlanModel.js";
 import { generateReport } from "../utils/reports/index.js";
+import { generateReportData } from "../utils/reportCalculations/index.js";
 
 function convertDate(csvDate) {
     const [day, month, year] = csvDate.split('-');
@@ -1893,93 +1894,6 @@ export const copyCaseData = async (req, res) => {
     }
 };
 
-// export const createClientPlan = async (req, res) => {
-//     const { case_id } = req.body;
-
-//     try {
-//         // Fetch case details
-//         const caseDetails = await getCasesByCaseId(case_id);
-
-//         // Handle case not found
-//         if (!caseDetails) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: MSG.CASE_NOT_FOUND,
-//             });
-//         }
-
-//         // Fetch financial data
-//         let data = await getCaseFinancialData(case_id);
-
-//         // Prepare expenses
-//         let monthlyExpenses = data.monthlyExpenses?.[0] || {};
-//         data.expenses = {
-//             ...monthlyExpenses,
-//             monthly_policy_premium_expense: 0,
-//         };
-//         delete data.monthlyExpenses;
-
-//         // Prepare filtered data
-//         let filterData = {
-//             people: data.people,
-//             properties: data.properties,
-//             credit: data.credit,
-//             loans: data.loans,
-//             investments: data.investments,
-//             expenses: data.expenses,
-//             totals: {
-//                 calculated_annual_budget_available: 0,
-//                 calculated_annual_principal_payment: 0,
-//                 calculated_monthly_final_surplus_budget: 0,
-//                 calculated_monthly_preliminary_surplus_budget: 0,
-//                 calculated_monthly_total_expenses: 0,
-//                 calculated_monthly_total_income: 0,
-//                 calculated_monthly_total_investment_allotments: 0,
-//                 calculated_monthly_total_reduction_in_expenses: 0,
-//                 monthly_reduction_on_investment_accounts_allotment: 0,
-//                 monthly_reduction_on_replaced_insurance_expenses: 0,
-//             },
-//         };
-
-//         // Get combined policy data
-//         let combinedData = await getCombinedPolicy(case_id);
-//         combinedData.map(elem => {
-//             elem.guaranteed_required_annual_premium = elem.total_guaranteed_premium;
-//             delete elem.total_guaranteed_premium;
-
-//             elem.total_cash_value = elem.total_cash;
-//             delete elem.total_cash;
-//         });
-
-//         // Generate the plan
-//         let create_plan = "";
-//         if (caseDetails.case_type_id == 4) {
-//             create_plan = createPlanWithNoProp(filterData, combinedData);
-//         } else {
-//             create_plan = createPlan(filterData, combinedData);
-//         }
-
-//         const report = generateReport(create_plan, combinedData, filterData);
-
-//         // Return the final plan as response
-//         return res.status(200).json({
-//             success: true,
-//             message: MSG.CLIENT_PLAN_CREATED,
-//             plan: create_plan,
-//             report: report,
-//             // caseData: filterData,
-//             // policyData: combinedData,
-//         });
-//     } catch (error) {
-//         console.error("Error creating client plan:", error);
-//         return res.status(500).json({
-//             success: false,
-//             message: MSG.INTERNAL_SERVER_ERROR,
-//             error: error.message,
-//         });
-//     }
-// };
-
 export const createClientPlan = async (req, res) => {
     const { case_id } = req.body;
 
@@ -2063,12 +1977,15 @@ export const createClientPlan = async (req, res) => {
 
         const report = generateReport(create_plan, combinedData, filterData);
 
+        const report_data = generateReportData(create_plan, filterData, caseDetails.case_type_id);
+
         // Return the final plan as response
         return res.status(200).json({
             success: true,
             message: MSG.CLIENT_PLAN_CREATED,
             plan: create_plan,
             report: report,
+            report_data: report_data,
         });
     } catch (error) {
         console.error("Error creating client plan:", error);

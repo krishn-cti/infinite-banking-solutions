@@ -1,4 +1,4 @@
-// utils/index.js
+// utils/reports/index.js
 
 // Import the four calculation files
 import calculateMortgageHelocCashLoan from './MotrgageHelocCashLoan.js';

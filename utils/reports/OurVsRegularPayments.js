@@ -11,7 +11,6 @@ export default function calculateOurVsRegularPayments(output) {
         throw new Error('Invalid output data provided: plan must be an array');
     }
     if (!output.data?.properties?.[0]) {
-        console.warn('No properties found, using default empty structure');
         output.data.properties = [{}];
     }
 
@@ -68,11 +67,7 @@ export default function calculateOurVsRegularPayments(output) {
             if (graphBalances.length > 0) {
                 graphBalances[graphBalances.length - 1] = 0; // Set final balance to 0
             }
-        } else {
-            console.warn('No valid amortization schedule generated, using default');
         }
-    } else {
-        console.warn('No mortgage data, skipping amortization schedule');
     }
 
     let graphMortgage = [...mortgageBalances];
