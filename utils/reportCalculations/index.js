@@ -26,6 +26,7 @@ export function generateReportData(plan, data, case_type_id) {
     // Validate inputs
     if (!plan || !Array.isArray(plan)) {
         return {
+            cashValueAccumulatedDuringThePeriod: 0,
             mortgageYearByOurPlan: 0,
             helocYearByOurPlan: 0,
             helocYearByRegularPlan: 0,
@@ -34,10 +35,14 @@ export function generateReportData(plan, data, case_type_id) {
             creditAndLoanYearByOurPlan: 0,
             onlyHelocYearByOurPlan: 0,
             onlyHelocAmountByOurPlan: 0,
+            allDebtsYearByOurPlan: 0,
+            firstMoneyCalculation: 0,
+            secondMoneyCalculation: 0,
         };
     }
     if (!data?.properties?.[0]?.mortgage && case_type_id !== '4') {
         return {
+            cashValueAccumulatedDuringThePeriod: 0,
             mortgageYearByOurPlan: 0,
             helocYearByOurPlan: 0,
             helocYearByRegularPlan: 0,
@@ -46,6 +51,9 @@ export function generateReportData(plan, data, case_type_id) {
             creditAndLoanYearByOurPlan: 0,
             onlyHelocYearByOurPlan: 0,
             onlyHelocAmountByOurPlan: 0,
+            allDebtsYearByOurPlan: 0,
+            firstMoneyCalculation: 0,
+            secondMoneyCalculation: 0,
         };
     }
 
@@ -151,18 +159,75 @@ export function generateReportData(plan, data, case_type_id) {
         }
     }
 
+    // Calculate all debts year based on our plan
     const allDebtsYearByOurPlan = Math.floor(
         output?.plan[output?.plan.length - 1]?.year || 1
     )
 
+    // Calculate first amount on our plan
     const firstMoneyCalculation = Math.round(output?.plan[1]?.calculations.ending_net_worth_this_year)
 
+    // Calculate second amount on our plan
     const secondMoneyCalculation = Math.round(
         output?.plan[output?.plan.length - 1]
             ?.calculations.ending_net_worth_this_year
     )
 
+    // Get years
+    const years = plan.map((item) => item.year);
+
+    // Extract starting balances
+    const starting_mortgage_balance_initial = plan.map(
+        (item) => item?.calculations?.starting_mortgage_balance || 0
+    );
+    const starting_heloc_balance_initial = plan.map(
+        (item) => item?.calculations?.starting_heloc_balance || 0
+    );
+
+    // Find last year with non-zero mortgage balance
+    let lastMortgageBalanceYear = 0;
+    let index = starting_mortgage_balance_initial.length - 1;
+    while (index >= 0) {
+        if (starting_mortgage_balance_initial[index] > 0) {
+            lastMortgageBalanceYear = index + 1;
+            break;
+        }
+        index--;
+    }
+
+    // Find last year with non-zero HELOC balance
+    let lastHelocBalanceYear = 0;
+    let index1 = starting_heloc_balance_initial.length - 1;
+    while (index1 >= 0) {
+        if (starting_heloc_balance_initial[index1] > 0) {
+            lastHelocBalanceYear = index1 + 1;
+            break;
+        }
+        index1--;
+    }
+
+    // Calculate accumulated cash value during the period
+    let cashValueAccumulatedDuringThePeriod = 0;
+
+    if (case_type_id == 2) {
+        // Use mortgage-based final cash value
+        const lastYearIndex = Math.max(lastMortgageBalanceYear - 1, 0);
+        cashValueAccumulatedDuringThePeriod = Math.round(
+            output.plan[lastYearIndex]?.calculations?.ending_policy_cash_value || 0
+        );
+    } else {
+        // Use whichever (Mortgage/HELOC) lasts longer
+        const compareYear =
+            lastMortgageBalanceYear > lastHelocBalanceYear
+                ? lastMortgageBalanceYear - 1
+                : lastHelocBalanceYear - 1;
+        cashValueAccumulatedDuringThePeriod = Math.round(
+            output.plan[compareYear]?.calculations?.ending_policy_cash_value || 0
+        );
+    }
+
     return {
+        cashValueAccumulatedDuringThePeriod,
         mortgageYearByOurPlan,
         helocYearByOurPlan,
         helocYearByRegularPlan,
