@@ -10,6 +10,8 @@ export default function calculateOurVsRegularPayments(output) {
     if (!output || !output.plan || !Array.isArray(output.plan)) {
         throw new Error('Invalid output data provided: plan must be an array');
     }
+    
+    output.plan.shift()
     if (!output.data?.properties?.[0]) {
         output.data.properties = [{}];
     }
@@ -28,6 +30,7 @@ export default function calculateOurVsRegularPayments(output) {
         .toFixed(2);
 
     // Filter mortgage balances based on starting_mortgage_balance
+    // output.plan.shift()
     const mortgageBalances = output.plan
         .filter((item) => {
             const balance = parseFloat(item.calculations?.starting_mortgage_balance) || 0;
