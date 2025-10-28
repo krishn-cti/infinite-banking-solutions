@@ -116,7 +116,8 @@ export const getCredits = (caseId) => {
 export const getLoans = (caseId) => {
     return new Promise((resolve, reject) => {
         const query = `
-        SELECT 
+        SELECT
+            loan_name,
             financed_amount,
             start_date AS loan_start_date,
             terms AS loan_length_in_months,

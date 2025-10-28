@@ -34,10 +34,6 @@ export default function calculateNetworthOvertime(plan) {
     }
 
     // Return data structured for graphing
-    worth.shift();
-    assets.shift();
-    liabilities.shift();
-    years.shift();
     return {
         worth,
         assets,

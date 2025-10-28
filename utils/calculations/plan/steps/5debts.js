@@ -131,7 +131,7 @@ export function debts(data, year, policy) {
       }
 
       data.calculations.specific_loan_balance_payments_this_year.push({
-        [loan.name]: payment,
+        [loan.loan_name]: payment,
         fully_paid: loan.calculated_monthly_payment_expense === 0
       });
 

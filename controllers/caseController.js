@@ -11,6 +11,7 @@ import { getCaseFinancialData } from "../models/clientPlanModel.js";
 import { generateReport } from "../utils/reports/index.js";
 import { generateReportData } from "../utils/reportCalculations/index.js";
 import { stepCalculationData } from "../utils/stepCalculations/index.js";
+// import { yearCalculationData } from "../utils/yearCalculations/index.js";
 
 function convertDate(csvDate) {
     const [day, month, year] = csvDate.split('-');
@@ -1982,6 +1983,8 @@ export const createClientPlan = async (req, res) => {
 
         const step_data = stepCalculationData(create_plan, filterData, caseDetails.case_type_id, combinedData);
 
+        // const year_data = yearCalculationData(create_plan, filterData, caseDetails.case_type_id);
+
         // Return the final plan as response
         return res.status(200).json({
             success: true,
@@ -1990,6 +1993,7 @@ export const createClientPlan = async (req, res) => {
             report: report,
             report_data: report_data,
             step_data: step_data,
+            // year_data: year_data,
         });
     } catch (error) {
         console.error("Error creating client plan:", error);
