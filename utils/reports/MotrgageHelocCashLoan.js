@@ -11,7 +11,7 @@ export default function calculateMortgageHelocCashLoan(plan) {
         throw new Error('Invalid plan data provided');
     }
 
-    plan.shift()
+    // plan.shift()
 
     // Extract arrays of values, handling NaN or undefined with 0 and rounding to 2 decimal places
     const starting_mortgage_balance = plan.map((item) =>
@@ -28,6 +28,10 @@ export default function calculateMortgageHelocCashLoan(plan) {
     );
 
     // Return the result as an object with year-wise arrays
+    starting_mortgage_balance.shift();
+    starting_heloc_balance.shift();
+    ending_policy_cash_value.shift();
+    starting_policy_loan_balance.shift();
     return {
         startingMortgageBalance: starting_mortgage_balance,
         startingHelocBalance: starting_heloc_balance,

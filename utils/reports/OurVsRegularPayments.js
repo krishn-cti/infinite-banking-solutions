@@ -81,6 +81,8 @@ export default function calculateOurVsRegularPayments(output) {
     }
 
     // Return data structured for graphing
+    // graphMortgage.shift();
+    // graphBalances.shift();
     return {
         graphMortgage,
         graphBalances,
