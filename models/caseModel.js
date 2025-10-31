@@ -1057,6 +1057,47 @@ export const createCaseWithAllData = async (caseData, relatedData) => {
         });
     });
 };
+// export const insertPolicyExcelData_old = async (policies) => {
+//     return new Promise((resolve, reject) => {
+//         if (!policies.length) return resolve(false);
+
+//         const values = policies.map(p => [
+//             p.policy_id,
+//             p.case_id,
+//             p.year,
+//             p.age,
+//             p.guaranteed_premium,
+//             p.deposit,
+//             p.cash_premiums,
+//             p.dividend,
+//             p.cash_increase,
+//             p.total_cash,
+//             p.total_death
+//         ]);
+
+//         const query = `
+//             INSERT INTO client_people_policy_details (
+//                 policy_id, case_id, year, age,
+//                 guaranteed_premium, deposit, cash_premiums,
+//                 dividend, cash_increase, total_cash, total_death
+//             ) VALUES ?
+//             ON DUPLICATE KEY UPDATE
+//                 age = VALUES(age),
+//                 guaranteed_premium = VALUES(guaranteed_premium),
+//                 deposit = VALUES(deposit),
+//                 cash_premiums = VALUES(cash_premiums),
+//                 dividend = VALUES(dividend),
+//                 cash_increase = VALUES(cash_increase),
+//                 total_cash = VALUES(total_cash),
+//                 total_death = VALUES(total_death)
+//         `;
+
+//         db.query(query, [values], (err, result) => {
+//             if (err) return reject(err);
+//             resolve(true);
+//         });
+//     });
+// };
 
 export const insertPolicyExcelData = async (policies) => {
     return new Promise((resolve, reject) => {
@@ -1068,29 +1109,115 @@ export const insertPolicyExcelData = async (policies) => {
             p.year,
             p.age,
             p.guaranteed_premium,
-            p.deposit,
+            p.guaranteed_cash_value,
+            p.guaranteed_death_benefit,
             p.cash_premiums,
+            p.cash_premiums_current_1,
+            p.cash_premiums_current_2,
+            p.premiums_paid_by_dividends,
+            p.premiums_paid_by_dividends_current_1,
+            p.premiums_paid_by_dividends_current_2,
             p.dividend,
+            p.annual_dividend_current_1,
+            p.annual_dividend_current_2,
             p.cash_increase,
-            p.total_cash,
-            p.total_death
+            p.total_cash_value_current_1,
+            p.total_cash_value_current_2,
+            p.total_death,
+            p.total_death_benefit_current_1,
+            p.total_death_benefit_current_2,
+            p.capital_dividend_account_credit,
+            p.capital_dividend_account_credit_current_1,
+            p.capital_dividend_account_credit_current_2,
+            p.deposit,
+            p.death_benefit_paid_up_additions,
+            p.cash_value_paid_up_additions,
+            p.reduced_paid_up_death_benefit,
+            p.acb_adjusted_cost_basis,
+            p.acb_adjusted_cost_basis_current_1,
+            p.acb_adjusted_cost_basis_current_2,
+            p.ncpi_net_cost_pure_insurance,
+            p.ncpi_net_cost_pure_insurance_current_1,
+            p.ncpi_net_cost_pure_insurance_current_2,
+            p.taxable_portion_of_dividends,
+            p.taxable_gain_on_surrender,
+            p.irr_cash_value,
+            p.irr_cash_value_current_1,
+            p.irr_cash_value_current_2,
+            p.irr_death_benefit,
+            p.irr_death_benefit_current_1,
+            p.irr_death_benefit_current_2,
+            p.compassionate_advance,
+            p.bereavement_counselling_benefit,
+            p.snap_advance,
+            p.living_benefit
         ]);
 
         const query = `
-            INSERT INTO client_people_policy_details (
-                policy_id, case_id, year, age,
-                guaranteed_premium, deposit, cash_premiums,
-                dividend, cash_increase, total_cash, total_death
+        INSERT INTO client_people_policy_details (
+            policy_id, case_id, year, age,
+            guaranteed_premium, guaranteed_cash_value, guaranteed_death_benefit,
+            cash_premiums, cash_premiums_current_1, cash_premiums_current_2,
+            premiums_paid_by_dividends, premiums_paid_by_dividends_current_1, premiums_paid_by_dividends_current_2,
+            dividend, annual_dividend_current_1, annual_dividend_current_2,
+            cash_increase, total_cash_value_current_1, total_cash_value_current_2,
+            total_death, total_death_benefit_current_1, total_death_benefit_current_2,
+            capital_dividend_account_credit, capital_dividend_account_credit_current_1, capital_dividend_account_credit_current_2,
+            deposit,
+            death_benefit_paid_up_additions, cash_value_paid_up_additions,
+            reduced_paid_up_death_benefit,
+            acb_adjusted_cost_basis, acb_adjusted_cost_basis_current_1, acb_adjusted_cost_basis_current_2,
+            ncpi_net_cost_pure_insurance, ncpi_net_cost_pure_insurance_current_1, ncpi_net_cost_pure_insurance_current_2,
+            taxable_portion_of_dividends, taxable_gain_on_surrender,
+            irr_cash_value, irr_cash_value_current_1, irr_cash_value_current_2,
+            irr_death_benefit, irr_death_benefit_current_1, irr_death_benefit_current_2,
+            compassionate_advance, bereavement_counselling_benefit, snap_advance, living_benefit
             ) VALUES ?
             ON DUPLICATE KEY UPDATE
-                age = VALUES(age),
-                guaranteed_premium = VALUES(guaranteed_premium),
-                deposit = VALUES(deposit),
-                cash_premiums = VALUES(cash_premiums),
-                dividend = VALUES(dividend),
-                cash_increase = VALUES(cash_increase),
-                total_cash = VALUES(total_cash),
-                total_death = VALUES(total_death)
+            age = VALUES(age),
+            guaranteed_premium = VALUES(guaranteed_premium),
+            guaranteed_cash_value = VALUES(guaranteed_cash_value),
+            guaranteed_death_benefit = VALUES(guaranteed_death_benefit),
+            cash_premiums = VALUES(cash_premiums),
+            cash_premiums_current_1 = VALUES(cash_premiums_current_1),
+            cash_premiums_current_2 = VALUES(cash_premiums_current_2),
+            premiums_paid_by_dividends = VALUES(premiums_paid_by_dividends),
+            premiums_paid_by_dividends_current_1 = VALUES(premiums_paid_by_dividends_current_1),
+            premiums_paid_by_dividends_current_2 = VALUES(premiums_paid_by_dividends_current_2),
+            dividend = VALUES(dividend),
+            annual_dividend_current_1 = VALUES(annual_dividend_current_1),
+            annual_dividend_current_2 = VALUES(annual_dividend_current_2),
+            cash_increase = VALUES(cash_increase),
+            total_cash_value_current_1 = VALUES(total_cash_value_current_1),
+            total_cash_value_current_2 = VALUES(total_cash_value_current_2),
+            total_death = VALUES(total_death),
+            total_death_benefit_current_1 = VALUES(total_death_benefit_current_1),
+            total_death_benefit_current_2 = VALUES(total_death_benefit_current_2),
+            capital_dividend_account_credit = VALUES(capital_dividend_account_credit),
+            capital_dividend_account_credit_current_1 = VALUES(capital_dividend_account_credit_current_1),
+            capital_dividend_account_credit_current_2 = VALUES(capital_dividend_account_credit_current_2),
+            deposit = VALUES(deposit),
+            death_benefit_paid_up_additions = VALUES(death_benefit_paid_up_additions),
+            cash_value_paid_up_additions = VALUES(cash_value_paid_up_additions),
+            reduced_paid_up_death_benefit = VALUES(reduced_paid_up_death_benefit),
+            acb_adjusted_cost_basis = VALUES(acb_adjusted_cost_basis),
+            acb_adjusted_cost_basis_current_1 = VALUES(acb_adjusted_cost_basis_current_1),
+            acb_adjusted_cost_basis_current_2 = VALUES(acb_adjusted_cost_basis_current_2),
+            ncpi_net_cost_pure_insurance = VALUES(ncpi_net_cost_pure_insurance),
+            ncpi_net_cost_pure_insurance_current_1 = VALUES(ncpi_net_cost_pure_insurance_current_1),
+            ncpi_net_cost_pure_insurance_current_2 = VALUES(ncpi_net_cost_pure_insurance_current_2),
+            taxable_portion_of_dividends = VALUES(taxable_portion_of_dividends),
+            taxable_gain_on_surrender = VALUES(taxable_gain_on_surrender),
+            irr_cash_value = VALUES(irr_cash_value),
+            irr_cash_value_current_1 = VALUES(irr_cash_value_current_1),
+            irr_cash_value_current_2 = VALUES(irr_cash_value_current_2),
+            irr_death_benefit = VALUES(irr_death_benefit),
+            irr_death_benefit_current_1 = VALUES(irr_death_benefit_current_1),
+            irr_death_benefit_current_2 = VALUES(irr_death_benefit_current_2),
+            compassionate_advance = VALUES(compassionate_advance),
+            bereavement_counselling_benefit = VALUES(bereavement_counselling_benefit),
+            snap_advance = VALUES(snap_advance),
+            living_benefit = VALUES(living_benefit)
         `;
 
         db.query(query, [values], (err, result) => {

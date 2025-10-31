@@ -1704,6 +1704,100 @@ export const uploadBulkCaseByCsv = async (req, res) => {
 //     }
 // };
 
+// export const uploadPolicyExcel_old = async (req, res) => {
+//     const file = req.file;
+//     const policy_id = req.body.policy_id;
+//     const case_id = req.body.case_id;
+
+//     if (!file || !policy_id || !case_id) {
+//         return res.status(400).json({ success: false, message: 'File, policy_id and case_id are required' });
+//     }
+
+//     const uploaded_file_name = file.originalname;
+
+//     try {
+//         const workbook = new ExcelJS.Workbook();
+//         await workbook.xlsx.readFile(file.path);
+
+//         const worksheet = workbook.worksheets[0]; // first sheet
+
+//         const rows = [];
+//         worksheet.eachRow((row, rowNumber) => {
+//             if (rowNumber === 1) return; // skip header
+//             rows.push(row.values);
+//         });
+
+//         // Extract header row (row.values starts from index 1)
+//         const headerRow = worksheet.getRow(1).values.map(h => String(h || "").trim());
+
+//         const cleanNumber = (val) => {
+//             if (!val) return 0.0;
+//             const cleaned = String(val).replace(/,/g, '').trim();
+//             return parseFloat(cleaned) || 0.0;
+//         };
+
+//         const normalizeKey = (key) =>
+//             key.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+
+//         // Map normalized headers to actual headers
+//         const headerMap = {};
+//         headerRow.forEach((header) => {
+//             const normalized = normalizeKey(header);
+//             headerMap[normalized] = header;
+//         });
+
+//         const getValue = (rowObj, expectedKey) => {
+//             const normalizedKey = normalizeKey(expectedKey);
+//             const actualKey = headerMap[normalizedKey];
+//             return rowObj[actualKey];
+//         };
+
+//         // Convert each row to an object { header: value }
+//         const rawRows = [];
+//         worksheet.eachRow((row, rowNumber) => {
+//             if (rowNumber === 1) return;
+//             const rowObj = {};
+//             row.values.forEach((cell, idx) => {
+//                 if (idx === 0) return; // skip Excel's empty index 0
+//                 rowObj[headerRow[idx]] = cell;
+//             });
+//             rawRows.push(rowObj);
+//         });
+
+//         const policies = rawRows.map(row => {
+//             const yearAgeRaw = getValue(row, 'Year | Age') || '';
+//             const [yearRaw, ageRaw] = String(yearAgeRaw).split('|');
+
+//             return {
+//                 policy_id,
+//                 case_id,
+//                 year: parseInt(yearRaw?.trim()) || null,
+//                 age: parseInt(ageRaw?.trim()) || null,
+//                 guaranteed_premium: cleanNumber(getValue(row, 'Guaranteed Required Annual Premium')),
+//                 deposit: cleanNumber(getValue(row, 'Excelerator Deposit Option Annual Deposit')),
+//                 cash_premiums: cleanNumber(getValue(row, 'Cash Premiums')),
+//                 dividend: cleanNumber(getValue(row, 'Annual Dividend')),
+//                 cash_increase: cleanNumber(getValue(row, 'Annual Increase in Total Cash Value')),
+//                 total_cash: cleanNumber(getValue(row, 'Total Cash Value')),
+//                 total_death: cleanNumber(getValue(row, 'Total Death Benefit')),
+//             };
+//         });
+
+//         await insertPolicyExcelData(policies);
+//         await updateClientPeoplePolicies(policy_id, uploaded_file_name);
+//         fs.unlinkSync(file.path);
+
+//         return res.status(200).json({ success: true, message: MSG.COMBINED_POLICY_DATA_INSERTED });
+//     } catch (err) {
+//         console.error(err);
+//         return res.status(500).json({
+//             success: false,
+//             message: MSG.COMBINED_POLICY_DATA_INSERTION_FAILED,
+//             error: err.message
+//         });
+//     }
+// };
+
 export const uploadPolicyExcel = async (req, res) => {
     const file = req.file;
     const policy_id = req.body.policy_id;
@@ -1718,17 +1812,23 @@ export const uploadPolicyExcel = async (req, res) => {
     try {
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.readFile(file.path);
-
         const worksheet = workbook.worksheets[0]; // first sheet
 
-        const rows = [];
+        // ✅ Step 1: Find the actual header row dynamically
+        let headerRowNumber = null;
         worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1) return; // skip header
-            rows.push(row.values);
+            const rowValues = row.values.map(v => String(v || "").trim().toLowerCase());
+            if (rowValues.some(val => val.includes("year") || val.includes("age"))) {
+                headerRowNumber = rowNumber;
+            }
         });
 
-        // Extract header row (row.values starts from index 1)
-        const headerRow = worksheet.getRow(1).values.map(h => String(h || "").trim());
+        if (!headerRowNumber) {
+            throw new Error("Header row not found (missing 'Year' or 'Age' column)");
+        }
+
+        // ✅ Step 2: Read header row from detected line
+        const headerRow = worksheet.getRow(headerRowNumber).values.map(h => String(h || "").trim());
 
         const cleanNumber = (val) => {
             if (!val) return 0.0;
@@ -1739,7 +1839,6 @@ export const uploadPolicyExcel = async (req, res) => {
         const normalizeKey = (key) =>
             key.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
-        // Map normalized headers to actual headers
         const headerMap = {};
         headerRow.forEach((header) => {
             const normalized = normalizeKey(header);
@@ -1752,18 +1851,19 @@ export const uploadPolicyExcel = async (req, res) => {
             return rowObj[actualKey];
         };
 
-        // Convert each row to an object { header: value }
+        // ✅ Step 3: Start reading data rows *after* the header row
         const rawRows = [];
         worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1) return;
+            if (rowNumber <= headerRowNumber) return; // skip everything before header
             const rowObj = {};
             row.values.forEach((cell, idx) => {
-                if (idx === 0) return; // skip Excel's empty index 0
+                if (idx === 0) return; // ExcelJS adds an empty first element
                 rowObj[headerRow[idx]] = cell;
             });
             rawRows.push(rowObj);
         });
 
+        // ✅ Step 4: Map into structured data
         const policies = rawRows.map(row => {
             const yearAgeRaw = getValue(row, 'Year | Age') || '';
             const [yearRaw, ageRaw] = String(yearAgeRaw).split('|');
@@ -1780,6 +1880,45 @@ export const uploadPolicyExcel = async (req, res) => {
                 cash_increase: cleanNumber(getValue(row, 'Annual Increase in Total Cash Value')),
                 total_cash: cleanNumber(getValue(row, 'Total Cash Value')),
                 total_death: cleanNumber(getValue(row, 'Total Death Benefit')),
+
+                // new fields
+                guaranteed_cash_value: cleanNumber(getValue(row, 'Guaranteed Cash Value')),
+                guaranteed_death_benefit: cleanNumber(getValue(row, 'Guaranteed Death Benefit')),
+                cash_premiums_current_1: cleanNumber(getValue(row, 'Cash Premiums Current - 1%')),
+                cash_premiums_current_2: cleanNumber(getValue(row, 'Cash Premiums Current - 2%')),
+                premiums_paid_by_dividends: cleanNumber(getValue(row, 'Premiums Paid by Dividends')),
+                premiums_paid_by_dividends_current_1: cleanNumber(getValue(row, 'Premiums Paid by Dividends Current - 1%')),
+                premiums_paid_by_dividends_current_2: cleanNumber(getValue(row, 'Premiums Paid by Dividends Current - 2%')),
+                annual_dividend_current_1: cleanNumber(getValue(row, 'Annual Dividend Current - 1%')),
+                annual_dividend_current_2: cleanNumber(getValue(row, 'Annual Dividend Current - 2%')),
+                total_cash_value_current_1: cleanNumber(getValue(row, 'Total Cash Value Current - 1%')),
+                total_cash_value_current_2: cleanNumber(getValue(row, 'Total Cash Value Current - 2%')),
+                total_death_benefit_current_1: cleanNumber(getValue(row, 'Total Death Benefit Current - 1%')),
+                total_death_benefit_current_2: cleanNumber(getValue(row, 'Total Death Benefit Current - 2%')),
+                capital_dividend_account_credit: cleanNumber(getValue(row, 'Capital Dividend Account Credit (corporate owned only)')),
+                capital_dividend_account_credit_current_1: cleanNumber(getValue(row, 'Capital Dividend Account Credit Current - 1% (corporate owned only)')),
+                capital_dividend_account_credit_current_2: cleanNumber(getValue(row, 'Capital Dividend Account Credit Current - 2% (corporate owned only)')),
+                death_benefit_paid_up_additions: cleanNumber(getValue(row, 'Death Benefit Paid Up Additions')),
+                cash_value_paid_up_additions: cleanNumber(getValue(row, 'Cash Value Paid Up Additions')),
+                reduced_paid_up_death_benefit: cleanNumber(getValue(row, 'Reduced Paid-up Death Benefit')),
+                acb_adjusted_cost_basis: cleanNumber(getValue(row, 'ACB (Adjusted Cost Basis)')),
+                acb_adjusted_cost_basis_current_1: cleanNumber(getValue(row, 'ACB (Adjusted Cost Basis) Current - 1%')),
+                acb_adjusted_cost_basis_current_2: cleanNumber(getValue(row, 'ACB (Adjusted Cost Basis) Current - 2%')),
+                ncpi_net_cost_pure_insurance: cleanNumber(getValue(row, 'NCPI (Net Cost of Pure Insurance)')),
+                ncpi_net_cost_pure_insurance_current_1: cleanNumber(getValue(row, 'NCPI (Net Cost of Pure Insurance) Current - 1%')),
+                ncpi_net_cost_pure_insurance_current_2: cleanNumber(getValue(row, 'NCPI (Net Cost of Pure Insurance) Current - 2%')),
+                taxable_portion_of_dividends: cleanNumber(getValue(row, 'Taxable Portion of Dividends')),
+                taxable_gain_on_surrender: cleanNumber(getValue(row, 'Taxable Gain on Surrender')),
+                irr_cash_value: cleanNumber(getValue(row, 'Internal Rate of Return Cash Value (%)')),
+                irr_cash_value_current_1: cleanNumber(getValue(row, 'Internal Rate of Return Cash Value (%) Current - 1%')),
+                irr_cash_value_current_2: cleanNumber(getValue(row, 'Internal Rate of Return Cash Value (%) Current - 2%')),
+                irr_death_benefit: cleanNumber(getValue(row, 'Internal Rate of Return Death Benefit (%)')),
+                irr_death_benefit_current_1: cleanNumber(getValue(row, 'Internal Rate of Return Death Benefit (%) Current - 1%')),
+                irr_death_benefit_current_2: cleanNumber(getValue(row, 'Internal Rate of Return Death Benefit (%) Current - 2%')),
+                compassionate_advance: cleanNumber(getValue(row, 'Compassionate Advance')),
+                bereavement_counselling_benefit: cleanNumber(getValue(row, 'Bereavement Counselling Benefit')),
+                snap_advance: cleanNumber(getValue(row, 'Snap Advance')),
+                living_benefit: cleanNumber(getValue(row, 'Living Benefit')),
             };
         });
 
