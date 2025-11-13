@@ -1227,6 +1227,50 @@ export const insertPolicyExcelData = async (policies) => {
     });
 };
 
+export const insertPolicyExcelData_short = async (policies) => {
+    return new Promise((resolve, reject) => {
+        if (!policies.length) return resolve(false);
+
+        // All columns in the same order as in your VALUES array
+        const columns = [
+            'policy_id', 'case_id', 'year', 'age',
+            'guaranteed_premium', 'guaranteed_cash_value', 'guaranteed_death_benefit',
+            'cash_premiums', 'cash_premiums_current_1', 'cash_premiums_current_2',
+            'premiums_paid_by_dividends', 'premiums_paid_by_dividends_current_1', 'premiums_paid_by_dividends_current_2',
+            'dividend', 'annual_dividend_current_1', 'annual_dividend_current_2',
+            'cash_increase', 'total_cash_value_current_1', 'total_cash_value_current_2',
+            'total_death', 'total_death_benefit_current_1', 'total_death_benefit_current_2',
+            'capital_dividend_account_credit', 'capital_dividend_account_credit_current_1', 'capital_dividend_account_credit_current_2',
+            'deposit', 'death_benefit_paid_up_additions', 'cash_value_paid_up_additions',
+            'reduced_paid_up_death_benefit', 'acb_adjusted_cost_basis', 'acb_adjusted_cost_basis_current_1', 'acb_adjusted_cost_basis_current_2',
+            'ncpi_net_cost_pure_insurance', 'ncpi_net_cost_pure_insurance_current_1', 'ncpi_net_cost_pure_insurance_current_2',
+            'taxable_portion_of_dividends', 'taxable_gain_on_surrender',
+            'irr_cash_value', 'irr_cash_value_current_1', 'irr_cash_value_current_2',
+            'irr_death_benefit', 'irr_death_benefit_current_1', 'irr_death_benefit_current_2',
+            'compassionate_advance', 'bereavement_counselling_benefit', 'snap_advance', 'living_benefit'
+        ];
+
+        const values = policies.map(p => columns.map(col => p[col]));
+
+        // Dynamically generate ON DUPLICATE KEY UPDATE part
+        const updateClause = columns
+            .filter(c => !['policy_id', 'case_id', 'year'].includes(c)) // don't overwrite identifiers
+            .map(c => `${c} = VALUES(${c})`)
+            .join(', ');
+
+        const query = `
+            INSERT INTO client_people_policy_details (${columns.join(', ')})
+            VALUES ?
+            ON DUPLICATE KEY UPDATE ${updateClause}
+        `;
+
+        db.query(query, [values], (err, result) => {
+            if (err) return reject(err);
+            resolve(true);
+        });
+    });
+};
+
 export const updateClientPeoplePolicies = async (policy_id, file_name) => {
     const query = `
         UPDATE client_people_policies
